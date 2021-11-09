@@ -1,6 +1,7 @@
 """A module for the function ncon, which does contractions of several tensors.
 """
 import numpy as np
+import torch
 from collections.abc import Iterable
 
 
@@ -345,9 +346,28 @@ def do_check_indices(L, v, order, forder):
 def con(A, B, inds):
     if type(A) == type(B) == np.ndarray:
         return np.tensordot(A, B, inds)
+    elif type(A) == torch.Tensor:
+        return torch.tensordot(A,inds[0],B,inds[1])
     else:
         return A.dot(B, inds)
 
 
 def trace(A, axis1=0, axis2=1):
-    return A.trace(axis1=axis1, axis2=axis2)
+    if type(A) == torch.tensor:
+        return trace_torch(A,axis1=axis1, axis2=axis2)
+    else :
+        return A.trace(axis1=axis1, axis2=axis2)
+
+def trace_torch(input, axis1=0, axis2=1):
+    """ code originally from https://github.com/pytorch/pytorch/issues/52668 """
+    assert input.shape[axis1] == input.shape[axis2], input.shape
+
+    shape = list(input.shape)
+    strides = list(input.stride())
+    strides[axis1] += strides[axis2]
+
+    shape[axis2] = 1
+    strides[axis2] = 0
+
+    input = torch.as_strided(input, size=shape, stride=strides)
+    return input.sum(dim=(axis1, axis2))

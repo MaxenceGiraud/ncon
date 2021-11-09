@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from ncon import ncon
 
 # The different calls deliberately use different variation of things like are
@@ -46,3 +47,15 @@ def test_large_contraction():
     )
     result_np = np.einsum("ijk, kilml, mh, q, qp -> hjp", a, b, c, d, e)
     assert np.allclose(result_ncon, result_np)
+
+def test_large_contraction_torch():
+    a = torch.randn(3, 4, 5)
+    b = torch.randn(5, 3, 6, 7, 6)
+    c = torch.randn(7, 2)
+    d = torch.randn(8)
+    e = torch.randn(8, 9)
+    result_ncon = ncon(
+        (a, b, c, d, e), ([3, -2, 2], [2, 3, 1, 4, 1], [4, -1], [5], [5, -3])
+    )
+    result_np = torch.einsum("ijk, kilml, mh, q, qp -> hjp", a, b, c, d, e)
+    assert torch.allclose(result_ncon, result_np)
